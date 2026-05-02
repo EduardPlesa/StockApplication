@@ -3,15 +3,17 @@ package com.stockapplication.config;
 import com.stockapplication.model.Stock;
 import com.stockapplication.repository.StockRepository;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
     private final StockRepository stockRepository;
+
+    public DataInitializer(StockRepository stockRepository) {
+        this.stockRepository = stockRepository;
+    }
 
     @Override
     public void run(String... args) {

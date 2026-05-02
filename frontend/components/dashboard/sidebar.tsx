@@ -1,19 +1,17 @@
 "use client"
 
-import { useState } from "react"
-import { LayoutDashboard, Star, Newspaper, Settings, LogOut, TrendingUp } from "lucide-react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { LayoutDashboard, Star, Settings, LogOut, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "watchlist", label: "Watchlist", icon: Star },
-  { id: "news", label: "News", icon: Newspaper },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/watchlist", label: "Watchlist", icon: Star },
 ] as const
 
-type NavId = (typeof navItems)[number]["id"]
-
 export function Sidebar() {
-  const [active, setActive] = useState<NavId>("dashboard")
+  const pathname = usePathname()
 
   return (
     <aside
@@ -37,13 +35,12 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="mt-2 flex flex-col gap-1" role="navigation">
-        {navItems.map(({ id, label, icon: Icon }) => {
-          const isActive = active === id
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href
           return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setActive(id)}
+            <Link
+              key={href}
+              href={href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
                 "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
@@ -51,14 +48,14 @@ export function Sidebar() {
                   ? "bg-primary/15 text-foreground ring-1 ring-primary/25"
                   : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
               )}
-            >
+              >
               <Icon
                 className={cn("h-4 w-4 transition-colors", isActive ? "text-primary" : "text-muted-foreground")}
                 aria-hidden="true"
               />
               <span>{label}</span>
               {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />}
-            </button>
+            </Link>
           )
         })}
       </nav>
