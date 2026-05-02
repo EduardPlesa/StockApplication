@@ -14,6 +14,18 @@ export async function fetchStocks(): Promise<Stock[]> {
   return response.json()
 }
 
+export async function searchStocks(query: string): Promise<Stock[]> {
+  const response = await fetch(`${API_BASE_URL}/api/stocks/search?query=${encodeURIComponent(query)}`, {
+    cache: "no-store",
+  })
+
+  if (!response.ok) {
+    throw new Error("Failed to search stocks")
+  }
+
+  return response.json()
+}
+
 export async function fetchStockHistory(ticker: string): Promise<StockHistoryPoint[]> {
   const response = await fetch(`${API_BASE_URL}/api/stocks/${ticker}/history`, {
     cache: "no-store",

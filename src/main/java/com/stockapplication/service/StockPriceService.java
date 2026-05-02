@@ -34,6 +34,14 @@ public class StockPriceService {
         return stockRepository.findByTickerIgnoreCase(ticker);
     }
 
+    public List<Stock> searchStocks(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+
+        return stockRepository.findByTickerContainingIgnoreCaseOrNameContainingIgnoreCase(query, query);
+    }
+
     public List<Stock> updateAllStockPrices(double maxPercentFluctuation) {
         List<Stock> stocks = stockRepository.findAll();
 
