@@ -1,8 +1,10 @@
 "use client"
 
 import { ArrowDownRight, ArrowUpRight } from "lucide-react"
-import { Area, AreaChart, ResponsiveContainer } from "recharts"
+import { Line, LineChart, XAxis, YAxis } from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { cn } from "@/lib/utils"
+import type { StockHistoryPoint } from "@/lib/types"
 
 export type IndexCardProps = {
   symbol: string
@@ -10,7 +12,7 @@ export type IndexCardProps = {
   value: number
   change: number
   changePercent: number
-  series: { x: number; y: number }[]
+  series: StockHistoryPoint[]
 }
 
 function formatNumber(n: number) {
@@ -22,15 +24,20 @@ function formatNumber(n: number) {
 
 export function IndexCard({ symbol, name, value, change, changePercent, series }: IndexCardProps) {
   const isUp = change >= 0
-  const accent = isUp ? "var(--color-primary)" : "var(--color-destructive)"
-  const gradId = `grad-${symbol.replace(/[^a-zA-Z0-9]/g, "")}`
+  const accent = isUp ? "hsl(142 72% 45%)" : "hsl(0 72% 56%)"
+  const chartData = series.map((point) => ({
+    time: new Date(point.timestamp).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+    price: point.price,
+  }))
 
   return (
     <article
       className="glass group relative overflow-hidden rounded-2xl p-5 transition-colors hover:bg-white/[0.04]"
       aria-label={`${name} (${symbol})`}
     >
-      {/* subtle highlight */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"
         aria-hidden="true"
@@ -62,38 +69,50 @@ export function IndexCard({ symbol, name, value, change, changePercent, series }
       <div className="mt-4 flex items-end justify-between gap-3">
         <div>
           <p className="font-mono text-2xl font-semibold tracking-tight text-foreground">{formatNumber(value)}</p>
-          <p
-            className={cn(
-              "mt-1 font-mono text-xs",
-              isUp ? "text-primary" : "text-destructive",
-            )}
-          >
+          <p className={cn("mt-1 font-mono text-xs", isUp ? "text-primary" : "text-destructive")}>
             {isUp ? "+" : ""}
-            {formatNumber(change)} today
+            {formatNumber(change)} over 24h
           </p>
         </div>
       </div>
 
-      {/* Sparkline */}
-      <div className="mt-4 h-16 w-full" aria-hidden="true">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={series} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-            <defs>
-              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={accent} stopOpacity={0.45} />
-                <stop offset="100%" stopColor={accent} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <Area
+      <div className="mt-4 h-40 w-full">
+        <ChartContainer
+          config={{
+            price: {
+              label: "Price",
+              color: accent,
+            },
+          }}
+          className="h-full w-full"
+        >
+          <LineChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+            <XAxis dataKey="time" tickLine={false} axisLine={false} minTickGap={28} />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              width={42}
+              domain={["dataMin - 2", "dataMax + 2"]}
+              tickFormatter={(price) => `$${Number(price).toFixed(0)}`}
+            />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  formatter={(value) => `$${Number(value).toFixed(2)}`}
+                />
+              }
+            />
+            <Line
               type="monotone"
-              dataKey="y"
-              stroke={accent}
-              strokeWidth={2}
-              fill={`url(#${gradId})`}
+              dataKey="price"
+              stroke="var(--color-price)"
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ r: 4 }}
               isAnimationActive={false}
             />
-          </AreaChart>
-        </ResponsiveContainer>
+          </LineChart>
+        </ChartContainer>
       </div>
     </article>
   )

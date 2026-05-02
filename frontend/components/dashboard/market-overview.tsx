@@ -1,49 +1,53 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { fetchStockHistory, fetchStocks } from "@/lib/api"
+import type { Stock, StockHistoryPoint } from "@/lib/types"
 import { IndexCard, type IndexCardProps } from "./index-card"
 
-// Deterministic seeded series so SSR and CSR match.
-function makeSeries(seed: number, trendUp: boolean): { x: number; y: number }[] {
-  const points = 32
-  const out: { x: number; y: number }[] = []
-  let v = 100
-  for (let i = 0; i < points; i++) {
-    // Simple LCG
-    seed = (seed * 9301 + 49297) % 233280
-    const rand = seed / 233280
-    const drift = (trendUp ? 0.6 : -0.5) * (i / points)
-    v += (rand - 0.5) * 4 + drift
-    out.push({ x: i, y: Number(v.toFixed(2)) })
-  }
-  return out
-}
-
-const indices: IndexCardProps[] = [
-  {
-    symbol: "SPX",
-    name: "S&P 500",
-    value: 5827.04,
-    change: 42.36,
-    changePercent: 0.73,
-    series: makeSeries(7, true),
-  },
-  {
-    symbol: "IXIC",
-    name: "NASDAQ Composite",
-    value: 18342.94,
-    change: 168.12,
-    changePercent: 0.92,
-    series: makeSeries(19, true),
-  },
-  {
-    symbol: "DJI",
-    name: "Dow Jones Industrial",
-    value: 42114.6,
-    change: -88.41,
-    changePercent: -0.21,
-    series: makeSeries(31, false),
-  },
-]
+const FEATURED_TICKERS = ["AAPL", "MSFT", "NVDA"]
 
 export function MarketOverview() {
+  const [cards, setCards] = useState<IndexCardProps[]>([])
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      try {
+        const stocks = await fetchStocks()
+        const featuredStocks = FEATURED_TICKERS
+          .map((ticker) => stocks.find((stock) => stock.ticker === ticker))
+          .filter((stock): stock is Stock => Boolean(stock))
+
+        const histories = await Promise.all(
+          featuredStocks.map(async (stock) => ({
+            stock,
+            history: await fetchStockHistory(stock.ticker),
+          })),
+        )
+
+        if (!cancelled) {
+          setCards(histories.map(({ stock, history }) => buildCard(stock, history)))
+          setError(null)
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Unable to load price history right now.")
+        }
+      }
+    }
+
+    void load()
+    const intervalId = window.setInterval(load, 10000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+    }
+  }, [])
+
   return (
     <section aria-labelledby="market-overview-heading" className="flex flex-col gap-4">
       <div className="flex items-end justify-between gap-3">
@@ -51,22 +55,42 @@ export function MarketOverview() {
           <h2 id="market-overview-heading" className="text-xl font-semibold tracking-tight text-foreground">
             Market Overview
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Live snapshot of the major U.S. indices.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Last 24 hours of simulated stock activity.</p>
         </div>
         <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
           </span>
-          Markets open · Real-time
+          Backend history feed
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {indices.map((idx) => (
-          <IndexCard key={idx.symbol} {...idx} />
-        ))}
-      </div>
+      {error ? (
+        <p className="text-sm text-destructive">{error}</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {cards.map((card) => (
+            <IndexCard key={card.symbol} {...card} />
+          ))}
+        </div>
+      )}
     </section>
   )
+}
+
+function buildCard(stock: Stock, history: StockHistoryPoint[]): IndexCardProps {
+  const firstPrice = history[0]?.price ?? stock.price
+  const latestPrice = history[history.length - 1]?.price ?? stock.price
+  const change = latestPrice - firstPrice
+  const changePercent = firstPrice === 0 ? 0 : (change / firstPrice) * 100
+
+  return {
+    symbol: stock.ticker,
+    name: stock.name,
+    value: latestPrice,
+    change,
+    changePercent,
+    series: history,
+  }
 }

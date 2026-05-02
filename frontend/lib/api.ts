@@ -1,4 +1,4 @@
-import type { Stock, TradeResponse, WatchlistResponse } from "./types"
+import type { Stock, StockHistoryPoint, TradeResponse, WatchlistResponse } from "./types"
 
 const API_BASE_URL = "http://localhost:8080"
 
@@ -9,6 +9,18 @@ export async function fetchStocks(): Promise<Stock[]> {
 
   if (!response.ok) {
     throw new Error("Failed to fetch stocks")
+  }
+
+  return response.json()
+}
+
+export async function fetchStockHistory(ticker: string): Promise<StockHistoryPoint[]> {
+  const response = await fetch(`${API_BASE_URL}/api/stocks/${ticker}/history`, {
+    cache: "no-store",
+  })
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch stock history")
   }
 
   return response.json()

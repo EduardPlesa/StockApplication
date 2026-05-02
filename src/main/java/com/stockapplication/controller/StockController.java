@@ -1,5 +1,6 @@
 package com.stockapplication.controller;
 
+import com.stockapplication.dto.StockHistoryPoint;
 import com.stockapplication.model.Stock;
 import com.stockapplication.service.StockPriceService;
 import java.util.List;
@@ -33,6 +34,11 @@ public class StockController {
                         HttpStatus.NOT_FOUND,
                         "Stock not found for ticker: " + ticker
                 ));
+    }
+
+    @GetMapping("/{ticker}/history")
+    public List<StockHistoryPoint> getStockHistory(@PathVariable String ticker) {
+        return stockPriceService.getStockHistory(ticker);
     }
 
     @PostMapping("/update")

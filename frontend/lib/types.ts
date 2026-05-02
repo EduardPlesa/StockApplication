@@ -13,6 +13,11 @@ export type WatchlistResponse = {
   stocks: Stock[]
 }
 
+export type StockHistoryPoint = {
+  timestamp: string
+  price: number
+}
+
 export type TradeResponse = {
   id: number
   ticker: string
